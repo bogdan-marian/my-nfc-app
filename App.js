@@ -76,7 +76,13 @@ export default function App() {
     }
   };
 
-
+  const onScanNFCip = async () => {
+    try {
+      console.log("Scan NFCip initiated")
+    } catch (e) {
+      console.log(e);
+    }
+  };
   
 
 
@@ -96,6 +102,7 @@ export default function App() {
             <IconButton icon="refresh" label="Reset" onPress={onReset} />
             <CircleButton onPress={onAddSticker} />
             <IconButton icon="save-alt" label="Save" onPress={onSaveImageAsync} />
+            <IconButton icon="nfc" label="Scan NFC" onPress={onScanNFCip} />
           </View>
         </View>
       ) : (
