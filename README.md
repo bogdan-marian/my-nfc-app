@@ -1,9 +1,15 @@
 # readme
 
 ```bash
+export ANDROID_HOME="/home/bogdan/Android/Sdk"
+export PATH=$ANDROID_HOME/platform-tools:$PATH
+npx expo run:android
+
 npx expo start
 
 ```
+
+run custom code: https://docs.expo.dev/workflow/customizing/
 
 # tutoraial
 - create modal: https://docs.expo.dev/tutorial/create-a-modal/

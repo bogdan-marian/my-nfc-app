@@ -78,7 +78,7 @@ export default function App() {
 
   const onScanNFCip = async () => {
     try {
-      console.log("Scan NFCip initiated")
+      console.log("Scan NFCip initiated by android")
     } catch (e) {
       console.log(e);
     }

@@ -7,8 +7,9 @@ export default function EmojiList({ onSelect, onCloseModal }) {
     require('../assets/images/sweat_smile.png'),
     require('../assets/images/tada.png'),
     require('../assets/images/wrench.png'),
-    require('../assets/images/+1.png'),
-    require('../assets/images/-1.png'),
+    require('../assets/images/plus1.png'),
+    require('../assets/images/minus1.png'),
+    require('../assets/images/heart.png'),
   ]);
 
   return (
