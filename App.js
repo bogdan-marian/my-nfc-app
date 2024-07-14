@@ -29,6 +29,7 @@ export default function App() {
   const [showAppOptions, setShowAppOptions] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [pickedEmoji, setPickedEmoji] = useState(null);
+  const [isNfcModalVisible, setIsNfcModalVisible] = useState(false);
 
   // Initialize NFC Manager in your main component or App component
   useEffect(() => {
@@ -87,20 +88,21 @@ export default function App() {
       console.log("Scan NFCip initiated by android")
 
       // Request NFC tech
-    await NfcManager.requestTechnology(NfcTech.Ndef);
+      await NfcManager.requestTechnology(NfcTech.Ndef);
 
-    // Get the tag
-    const tag = await NfcManager.getTag();
-    console.log("NFC Tag Data: ", tag);
+      // Get the tag
+      const tag = await NfcManager.getTag();
+      console.log("NFC Tag Data: ", tag);
 
-    // Cleanup
-    //await NfcManager.setAlertMessageIOS('NFC tag read');
-    NfcManager.cancelTechnologyRequest();
+      // Cleanup
+      //await NfcManager.setAlertMessageIOS('NFC tag read');
+      NfcManager.cancelTechnologyRequest();
 
     } catch (e) {
       console.log(e);
     }
   };
+
 
 
 
