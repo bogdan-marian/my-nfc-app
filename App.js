@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 
@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
+import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 
 const PlaceholderImage = require("./assets/images/background-image.png");
 
@@ -28,6 +29,11 @@ export default function App() {
   const [showAppOptions, setShowAppOptions] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [pickedEmoji, setPickedEmoji] = useState(null);
+
+  // Initialize NFC Manager in your main component or App component
+  useEffect(() => {
+    NfcManager.start();
+  }, []);
 
 
   if (status === null) {
@@ -79,11 +85,23 @@ export default function App() {
   const onScanNFCip = async () => {
     try {
       console.log("Scan NFCip initiated by android")
+
+      // Request NFC tech
+    await NfcManager.requestTechnology(NfcTech.Ndef);
+
+    // Get the tag
+    const tag = await NfcManager.getTag();
+    console.log("NFC Tag Data: ", tag);
+
+    // Cleanup
+    //await NfcManager.setAlertMessageIOS('NFC tag read');
+    NfcManager.cancelTechnologyRequest();
+
     } catch (e) {
       console.log(e);
     }
   };
-  
+
 
 
 
