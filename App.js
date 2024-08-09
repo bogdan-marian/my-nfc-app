@@ -2,28 +2,26 @@ import { useState, useRef, useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 
+import Button from "./components/Button";
+import ImageViewer from "./components/ImageViewer";
+import * as ImagePicker from "expo-image-picker";
 
-import Button from './components/Button';
-import ImageViewer from './components/ImageViewer';
-import * as ImagePicker from 'expo-image-picker';
-
-import CircleButton from './components/CircleButton';
-import IconButton from './components/IconButton';
+import CircleButton from "./components/CircleButton";
+import IconButton from "./components/IconButton";
 import EmojiPicker from "./components/EmojiPicker";
-import EmojiList from './components/EmojiList';
-import EmojiSticker from './components/EmojiSticker';
+import EmojiList from "./components/EmojiList";
+import EmojiSticker from "./components/EmojiSticker";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import * as MediaLibrary from 'expo-media-library';
-import { captureRef } from 'react-native-view-shot';
-import { Alert } from 'react-native';
-import NfcManager, { NfcTech , Ndef, NfcEvents} from 'react-native-nfc-manager';
+import * as MediaLibrary from "expo-media-library";
+import { captureRef } from "react-native-view-shot";
+import { Alert } from "react-native";
+import NfcManager, { NfcTech, Ndef, NfcEvents } from "react-native-nfc-manager";
 
 const PlaceholderImage = require("./assets/images/background-image.png");
 
 export default function App() {
-
   const [status, requestPermission] = MediaLibrary.usePermissions();
   const imageRef = useRef();
   const [selectedImage, setSelectedImage] = useState(null);
@@ -36,7 +34,6 @@ export default function App() {
   useEffect(() => {
     NfcManager.start();
   }, []);
-
 
   if (status === null) {
     requestPermission();
@@ -80,25 +77,25 @@ export default function App() {
       setSelectedImage(result.assets[0].uri);
       setShowAppOptions(true);
     } else {
-      alert('You did not select any image.');
+      alert("You did not select any image.");
     }
   };
 
   const onScanNFCip = async () => {
     try {
-      console.log("Scan NFCip initiated by android")
+      console.log("Scan NFCip initiated by android");
 
       // Request NFC tech
       await NfcManager.requestTechnology(NfcTech.Ndef);
 
       // Get the tag
       const tag = await NfcManager.getTag();
-      console.log("NFC Tag Data: ", tag);
+
+      // Log the tag data in JSON format
+      console.log("NFC Tag Data: ", JSON.stringify(tag, null, 2));
 
       // Cleanup
-      //await NfcManager.setAlertMessageIOS('NFC tag read');
-      NfcManager.cancelTechnologyRequest();
-
+      await NfcManager.cancelTechnologyRequest();
     } catch (e) {
       console.log(e);
     }
@@ -107,45 +104,70 @@ export default function App() {
   const onWriteNFCip = async () => {
     try {
       console.log("Write NFCip initiated by android");
-  
+
       // Request tag discovery with all technologies
-      await NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.NfcA, NfcTech.NfcB, NfcTech.NfcF, NfcTech.NfcV]);
-  
+      await NfcManager.requestTechnology([
+        NfcTech.Ndef,
+        NfcTech.NfcA,
+        NfcTech.NfcB,
+        NfcTech.NfcF,
+        NfcTech.NfcV,
+      ]);
+
       // Get the tag and check if it is writable
       const tag = await NfcManager.getTag();
       console.log("Tag discovered:", tag);
-  
+
       if (tag.isWritable) {
         console.log("Tag is writable, proceeding with write operation...");
       } else {
         console.warn("Tag is not writable.");
-        Alert.alert('Error', 'Tag is not writable.');
+        Alert.alert("Error", "Tag is not writable.");
         return;
       }
-  
+
       // Create a simple NDEF message
-      const message = Ndef.encodeMessage([Ndef.textRecord('Hello World')]);
-  
+      // const message = Ndef.encodeMessage([Ndef.textRecord('Hello World')]);
+      const vxMoneyId = "vxMoneyId01";
+      const vxMoneyMessage = "HelloWorld";
+
+      // Convert the string "vxMoneyMessage" to a Uint8Array
+      const vxMoneyMessageUint8Array = new Uint8Array(
+        Array.from("vxMoneyMessage").map((char) => char.charCodeAt(0))
+      );
+
+      const message = Ndef.encodeMessage([
+        Ndef.textRecord(
+          vxMoneyMessage,
+          undefined,
+          undefined,
+          vxMoneyMessageUint8Array
+        ), // Single record with converted ID
+      ]);
+
       if (!message) {
-        console.warn('Failed to create NDEF message');
-        Alert.alert('Failed to create NDEF message');
+        console.warn("Failed to create NDEF message");
+        Alert.alert("Failed to create NDEF message");
         return;
       }
-  
+
       console.log("Writing NDEF message...");
       await writeNdefMessageWithRetry(message, 3); // Retry up to 3 times
-      console.log('Successfully wrote NDEF message');
-      Alert.alert('Successfully wrote NDEF message');
-  
+      console.log("Successfully wrote NDEF message");
+      Alert.alert("Successfully wrote NDEF message");
     } catch (ex) {
-      console.warn('Write NFC error:', ex);
-      Alert.alert('Failed to write NDEF message', ex.toString());
-  
+      console.warn("Write NFC error:", ex);
+      Alert.alert("Failed to write NDEF message", ex.toString());
+
       if (ex.message.includes("reconnectAfterWrite")) {
-        console.warn("Reconnection after write error detected. This may be a tag or device-specific issue.");
-        Alert.alert('Reconnection Error', 'A reconnection issue occurred after writing to the NFC tag. Please try again.');
+        console.warn(
+          "Reconnection after write error detected. This may be a tag or device-specific issue."
+        );
+        Alert.alert(
+          "Reconnection Error",
+          "A reconnection issue occurred after writing to the NFC tag. Please try again."
+        );
       }
-  
     } finally {
       // Clean up NFC technology and event listeners
       try {
@@ -156,16 +178,20 @@ export default function App() {
       }
     }
   };
-  
+
   const writeNdefMessageWithRetry = async (message, retries) => {
     for (let i = 0; i < retries; i++) {
       try {
-        await NfcManager.writeNdefMessage(message, { reconnectAfterWrite: false }); // Add the parameter here
+        await NfcManager.writeNdefMessage(message, {
+          reconnectAfterWrite: false,
+        }); // Add the parameter here
         return;
       } catch (error) {
         console.warn(`Attempt ${i + 1} failed:`, error);
         if (i === retries - 1) {
-          throw new Error(`Failed to write NDEF message after ${retries} attempts: ${error.message}`);
+          throw new Error(
+            `Failed to write NDEF message after ${retries} attempts: ${error.message}`
+          );
         }
       }
     }
@@ -175,8 +201,13 @@ export default function App() {
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.imageContainer}>
         <View ref={imageRef} collapsable={false}>
-          <ImageViewer placeholderImageSource={PlaceholderImage} selectedImage={selectedImage} />
-          {pickedEmoji && <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />}
+          <ImageViewer
+            placeholderImageSource={PlaceholderImage}
+            selectedImage={selectedImage}
+          />
+          {pickedEmoji && (
+            <EmojiSticker imageSize={40} stickerSource={pickedEmoji} />
+          )}
         </View>
       </View>
       {showAppOptions ? (
@@ -191,8 +222,15 @@ export default function App() {
         </View>
       ) : (
         <View style={styles.footerContainer}>
-          <Button theme="primary" label="Choose a photo" onPress={pickImageAsync} />
-          <Button label="Use this photo" onPress={() => setShowAppOptions(true)} />
+          <Button
+            theme="primary"
+            label="Choose a photo"
+            onPress={pickImageAsync}
+          />
+          <Button
+            label="Use this photo"
+            onPress={() => setShowAppOptions(true)}
+          />
         </View>
       )}
 
@@ -205,12 +243,11 @@ export default function App() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#25292e',
-    alignItems: 'center',
+    backgroundColor: "#25292e",
+    alignItems: "center",
   },
   imageContainer: {
     flex: 1,
@@ -218,14 +255,14 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     flex: 1 / 3,
-    alignItems: 'center',
+    alignItems: "center",
   },
   optionsContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 80,
   },
   optionsRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
+    alignItems: "center",
+    flexDirection: "row",
   },
 });
