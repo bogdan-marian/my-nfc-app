@@ -92,52 +92,63 @@ export default function App() {
       const tag = await NfcManager.getTag();
 
       // Log the tag data in JSON format
+
       console.log("NFC Tag Data: ", JSON.stringify(tag, null, 2));
+
+      console.log("NFC tag id: " + tag.id);
+
+      const ndefMessage = tag.ndefMessage?.[0]; // Safely access the first element or get undefined if it's not present
+      if (ndefMessage) {
+        const jsonString = Ndef.text.decodePayload(ndefMessage.payload);
+        const data = JSON.parse(jsonString);
+        console.log("Parsed Data: ", data);
+      } else {
+        console.log("No NDEF message found or the message is empty.");
+      }
 
       // Cleanup
       await NfcManager.cancelTechnologyRequest();
     } catch (e) {
       console.log(e);
+      Alert.alert("NFC scan error: ", e);
     }
   };
-  
+
   const onWriteNFCip = async () => {
     try {
       console.log("Write NFCip initiated by android");
-  
+
       // Request NFC tech
       await NfcManager.requestTechnology([NfcTech.Ndef]);
-  
+
       // Get the tag and check if it is writable
       const tag = await NfcManager.getTag();
       console.log("Tag discovered:", tag);
-  
+
       if (!tag.isWritable) {
         console.warn("Tag is not writable.");
         Alert.alert("Error", "Tag is not writable.");
         return;
       }
-  
+
       // Create the JSON object
       const jsonData = {
         id: "vxMoneyMessage",
         message: "HelloWorld",
       };
-  
+
       // Convert the JSON object to a string
       const jsonString = JSON.stringify(jsonData);
-  
+
       // Encode the JSON string as an NDEF record
-      const message = Ndef.encodeMessage([
-        Ndef.textRecord(jsonString),
-      ]);
-  
+      const message = Ndef.encodeMessage([Ndef.textRecord(jsonString)]);
+
       if (!message) {
         console.warn("Failed to create NDEF message");
         Alert.alert("Failed to create NDEF message");
         return;
       }
-  
+
       console.log("Writing NDEF message...");
       await writeNdefMessageWithRetry(message, 3); // Retry up to 3 times
       console.log("Successfully wrote NDEF message");
