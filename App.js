@@ -17,7 +17,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
-import NfcManager, { NfcTech } from 'react-native-nfc-manager';
+import { Alert } from 'react-native';
+import NfcManager, { NfcTech , Ndef, NfcEvents} from 'react-native-nfc-manager';
 
 const PlaceholderImage = require("./assets/images/background-image.png");
 
@@ -103,10 +104,85 @@ export default function App() {
     }
   };
 
-
-
-
-
+  const onWriteNFCip = async () => {
+    try {
+      console.log("Write NFCip initiated by android");
+  
+      // Request tag discovery with all technologies
+      await NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.NfcA, NfcTech.NfcB, NfcTech.NfcF, NfcTech.NfcV]);
+  
+      // Get the tag and check if it is NDEF formatted
+      const tag = await NfcManager.getTag();
+      console.log("Tag discovered:", tag);
+  
+      if (tag.techTypes.includes(NfcTech.Ndef)) {
+        console.log("Tag is already NDEF formatted, skipping formatting...");
+      } else {
+        console.log("Tag is not NDEF formatted, attempting to format...");
+  
+        // Cancel the current technology request before starting a new one
+        await NfcManager.cancelTechnologyRequest();
+  
+        try {
+          // Request NdefFormatable technology to format the tag
+          await NfcManager.requestTechnology(NfcTech.NdefFormatable);
+  
+          const timeout = new Promise((resolve, reject) =>
+            setTimeout(() => reject(new Error('Formatting timeout')), 10000) // 10 seconds timeout
+          );
+  
+          const formatTag = NfcManager.formatToNdef();
+          await Promise.race([formatTag, timeout]);
+  
+          console.log("Tag successfully formatted to NDEF");
+        } catch (formatError) {
+          console.warn("Failed to format the tag to NDEF:", formatError);
+          Alert.alert('Failed to format the tag to NDEF', formatError.message);
+          return;
+        }
+      }
+  
+      // Create a simple NDEF message
+      const message = Ndef.encodeMessage([Ndef.textRecord('Hello World')]);
+  
+      if (!message) {
+        console.warn('Failed to create NDEF message');
+        Alert.alert('Failed to create NDEF message');
+        return;
+      }
+  
+      console.log("Writing NDEF message...");
+      await writeNdefMessageWithRetry(message, 3); // Retry up to 3 times
+      console.log('Successfully wrote NDEF message');
+      Alert.alert('Successfully wrote NDEF message');
+  
+    } catch (ex) {
+      console.warn('Write NFC error:', ex);
+      Alert.alert('Failed to write NDEF message', ex.toString());
+    } finally {
+      // Clean up NFC technology and event listeners
+      try {
+        await NfcManager.cancelTechnologyRequest();
+        console.log("NFC technology request canceled");
+      } catch (cleanupError) {
+        console.warn("Failed to cancel NFC technology request", cleanupError);
+      }
+    }
+  };
+  
+  const writeNdefMessageWithRetry = async (message, retries) => {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await NfcManager.writeNdefMessage(message);
+        return;
+      } catch (error) {
+        console.warn(`Attempt ${i + 1} failed:`, error);
+        if (i === retries - 1) {
+          throw new Error(`Failed to write NDEF message after ${retries} attempts: ${error.message}`);
+        }
+      }
+    }
+  };
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -121,8 +197,9 @@ export default function App() {
           <View style={styles.optionsRow}>
             <IconButton icon="refresh" label="Reset" onPress={onReset} />
             <CircleButton onPress={onAddSticker} />
-            <IconButton icon="save-alt" label="Save" onPress={onSaveImageAsync} />
-            <IconButton icon="nfc" label="Scan NFC" onPress={onScanNFCip} />
+            {/** <IconButton icon="save-alt" label="Save" onPress={onSaveImageAsync} />*/}
+            <IconButton icon="nfc" label="Scan" onPress={onScanNFCip} />
+            <IconButton icon="nfc" label="Write" onPress={onWriteNFCip} />
           </View>
         </View>
       ) : (

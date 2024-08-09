@@ -6,7 +6,7 @@ export ANDROID_HOME="/home/bogdan/Android/Sdk"
 # mac m2
 export ANDROID_HOME="/Users/bogdan/Library/Android/sdk"
 export PATH=$ANDROID_HOME/platform-tools:$PATH
-npx expo run:android
+
 
 npx expo start
 
