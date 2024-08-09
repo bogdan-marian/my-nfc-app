@@ -111,35 +111,16 @@ export default function App() {
       // Request tag discovery with all technologies
       await NfcManager.requestTechnology([NfcTech.Ndef, NfcTech.NfcA, NfcTech.NfcB, NfcTech.NfcF, NfcTech.NfcV]);
   
-      // Get the tag and check if it is NDEF formatted
+      // Get the tag and check if it is writable
       const tag = await NfcManager.getTag();
       console.log("Tag discovered:", tag);
   
-      if (tag.techTypes.includes(NfcTech.Ndef)) {
-        console.log("Tag is already NDEF formatted, skipping formatting...");
+      if (tag.isWritable) {
+        console.log("Tag is writable, proceeding with write operation...");
       } else {
-        console.log("Tag is not NDEF formatted, attempting to format...");
-  
-        // Cancel the current technology request before starting a new one
-        await NfcManager.cancelTechnologyRequest();
-  
-        try {
-          // Request NdefFormatable technology to format the tag
-          await NfcManager.requestTechnology(NfcTech.NdefFormatable);
-  
-          const timeout = new Promise((resolve, reject) =>
-            setTimeout(() => reject(new Error('Formatting timeout')), 10000) // 10 seconds timeout
-          );
-  
-          const formatTag = NfcManager.formatToNdef();
-          await Promise.race([formatTag, timeout]);
-  
-          console.log("Tag successfully formatted to NDEF");
-        } catch (formatError) {
-          console.warn("Failed to format the tag to NDEF:", formatError);
-          Alert.alert('Failed to format the tag to NDEF', formatError.message);
-          return;
-        }
+        console.warn("Tag is not writable.");
+        Alert.alert('Error', 'Tag is not writable.');
+        return;
       }
   
       // Create a simple NDEF message
@@ -159,6 +140,12 @@ export default function App() {
     } catch (ex) {
       console.warn('Write NFC error:', ex);
       Alert.alert('Failed to write NDEF message', ex.toString());
+  
+      if (ex.message.includes("reconnectAfterWrite")) {
+        console.warn("Reconnection after write error detected. This may be a tag or device-specific issue.");
+        Alert.alert('Reconnection Error', 'A reconnection issue occurred after writing to the NFC tag. Please try again.');
+      }
+  
     } finally {
       // Clean up NFC technology and event listeners
       try {
@@ -173,7 +160,7 @@ export default function App() {
   const writeNdefMessageWithRetry = async (message, retries) => {
     for (let i = 0; i < retries; i++) {
       try {
-        await NfcManager.writeNdefMessage(message);
+        await NfcManager.writeNdefMessage(message, { reconnectAfterWrite: false }); // Add the parameter here
         return;
       } catch (error) {
         console.warn(`Attempt ${i + 1} failed:`, error);
