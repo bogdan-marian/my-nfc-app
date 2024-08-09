@@ -133,7 +133,7 @@ export default function App() {
 
       // Create the JSON object
       const jsonData = {
-        vxMoneyCardId: 100,
+        vxMoneyCardId: 101,
         vxMoneyCardVersion: 1,
       };
 
