@@ -133,8 +133,8 @@ export default function App() {
 
       // Create the JSON object
       const jsonData = {
-        id: "vxMoneyMessage",
-        message: "HelloWorld",
+        vxMoneyCardId: 100,
+        vxMoneyCardVersion: 1,
       };
 
       // Convert the JSON object to a string
