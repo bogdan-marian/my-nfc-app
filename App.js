@@ -126,24 +126,21 @@ export default function App() {
         return;
       }
 
-      // Create a simple NDEF message
-      // const message = Ndef.encodeMessage([Ndef.textRecord('Hello World')]);
-      const vxMoneyId = "vxMoneyId01";
-      const vxMoneyMessage = "HelloWorld";
+      // <start>
 
-      // Convert the string "vxMoneyMessage" to a Uint8Array
-      const vxMoneyMessageUint8Array = new Uint8Array(
-        Array.from("vxMoneyMessage").map((char) => char.charCodeAt(0))
+      const vxMoneyMessage = "HelloWorld";
+      const idString = "vxMoneyMessage";
+
+      // Convert the id string to a Uint8Array
+      const idUint8Array = new Uint8Array(
+        Array.from(idString).map((char) => char.charCodeAt(0))
       );
 
       const message = Ndef.encodeMessage([
-        Ndef.textRecord(
-          vxMoneyMessage,
-          undefined,
-          undefined,
-          vxMoneyMessageUint8Array
-        ), // Single record with converted ID
+        Ndef.textRecord(vxMoneyMessage, undefined, undefined, idUint8Array), // Single record with converted ID
       ]);
+
+      // <end>
 
       if (!message) {
         console.warn("Failed to create NDEF message");
