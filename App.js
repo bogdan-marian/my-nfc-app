@@ -100,54 +100,44 @@ export default function App() {
       console.log(e);
     }
   };
-
+  
   const onWriteNFCip = async () => {
     try {
       console.log("Write NFCip initiated by android");
-
-      // Request tag discovery with all technologies
-      await NfcManager.requestTechnology([
-        NfcTech.Ndef,
-        NfcTech.NfcA,
-        NfcTech.NfcB,
-        NfcTech.NfcF,
-        NfcTech.NfcV,
-      ]);
-
+  
+      // Request NFC tech
+      await NfcManager.requestTechnology([NfcTech.Ndef]);
+  
       // Get the tag and check if it is writable
       const tag = await NfcManager.getTag();
       console.log("Tag discovered:", tag);
-
-      if (tag.isWritable) {
-        console.log("Tag is writable, proceeding with write operation...");
-      } else {
+  
+      if (!tag.isWritable) {
         console.warn("Tag is not writable.");
         Alert.alert("Error", "Tag is not writable.");
         return;
       }
-
-      // <start>
-
-      const vxMoneyMessage = "HelloWorld";
-      const idString = "vxMoneyMessage";
-
-      // Convert the id string to a Uint8Array
-      const idUint8Array = new Uint8Array(
-        Array.from(idString).map((char) => char.charCodeAt(0))
-      );
-
+  
+      // Create the JSON object
+      const jsonData = {
+        id: "vxMoneyMessage",
+        message: "HelloWorld",
+      };
+  
+      // Convert the JSON object to a string
+      const jsonString = JSON.stringify(jsonData);
+  
+      // Encode the JSON string as an NDEF record
       const message = Ndef.encodeMessage([
-        Ndef.textRecord(vxMoneyMessage, undefined, undefined, idUint8Array), // Single record with converted ID
+        Ndef.textRecord(jsonString),
       ]);
-
-      // <end>
-
+  
       if (!message) {
         console.warn("Failed to create NDEF message");
         Alert.alert("Failed to create NDEF message");
         return;
       }
-
+  
       console.log("Writing NDEF message...");
       await writeNdefMessageWithRetry(message, 3); // Retry up to 3 times
       console.log("Successfully wrote NDEF message");
@@ -155,18 +145,7 @@ export default function App() {
     } catch (ex) {
       console.warn("Write NFC error:", ex);
       Alert.alert("Failed to write NDEF message", ex.toString());
-
-      if (ex.message.includes("reconnectAfterWrite")) {
-        console.warn(
-          "Reconnection after write error detected. This may be a tag or device-specific issue."
-        );
-        Alert.alert(
-          "Reconnection Error",
-          "A reconnection issue occurred after writing to the NFC tag. Please try again."
-        );
-      }
     } finally {
-      // Clean up NFC technology and event listeners
       try {
         await NfcManager.cancelTechnologyRequest();
         console.log("NFC technology request canceled");
